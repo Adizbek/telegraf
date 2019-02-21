@@ -1032,7 +1032,7 @@ export class Markup {
 
   payButton(text: string, hide: boolean): PayButton;
 
-  static removeKeyboard(value: string): Markup;
+  static removeKeyboard(value: boolean): Markup;
 
   static forceReply(value?: string): Markup;
 

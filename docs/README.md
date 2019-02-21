@@ -47,7 +47,7 @@ bot.start((ctx) => ctx.reply('Welcome'))
 bot.help((ctx) => ctx.reply('Send me a sticker'))
 bot.on('sticker', (ctx) => ctx.reply('👍'))
 bot.hears('hi', (ctx) => ctx.reply('Hey there'))
-bot.startPolling()
+bot.launch()
 ```
 
 
@@ -58,7 +58,7 @@ const bot = new Telegraf(process.env.BOT_TOKEN)
 bot.command('oldschool', (ctx) => ctx.reply('Hello'))
 bot.command('modern', ({ reply }) => reply('Yo'))
 bot.command('hipster', Telegraf.reply('λ'))
-bot.startPolling()
+bot.launch()
 ```
 
 For additional bot examples see [`examples`](https://github.com/telegraf/telegraf/tree/master/docs/examples) folder.
@@ -84,6 +84,8 @@ For additional bot examples see [`examples`](https://github.com/telegraf/telegra
 * [YTubevideoBot](https://github.com/n1ghtw0lff/YTubevideoBot)
 * [Nyaa.si bot](https://github.com/ejnshtein/nyaasi-bot)
 * [Ordis Prime](https://github.com/MaxTgr/Ordis-Prime)
+* [telegraf-rutracker-transmission](https://github.com/DZamataev/telegraf-rutracker-transmission)
+* [kitchen-timer-bot](https://github.com/DZamataev/kitchen-timer-bot)
 * Send PR to add link to your bot
 
 ## Introduction
@@ -125,6 +127,7 @@ bot.use((ctx, next) => {
 })
 
 bot.on('text', (ctx) => ctx.reply('Hello World'))
+bot.launch()
 ```
 
 ##### Cascading with async functions
@@ -161,21 +164,20 @@ To perform custom error-handling logic use following snippet:
 
 ```js
 const bot = new Telegraf(process.env.BOT_TOKEN)
-
 bot.catch((err) => {
   console.log('Ooops', err)
 })
+bot.start((ctx) => ctx.reply(42/0))
+bot.launch()
 ``` 
 
 #### Context
 
-A Telegraf Context encapsulates telegram message.
+A Telegraf Context encapsulates telegram update.
 Context is created per request and contains following props:
 
 * `ctx.telegram `            - Telegram client instance
-* `ctx.webhookReply `        - Shortcut to `ctx.telegram.webhookReply`
 * `ctx.updateType `          - Update type (message, inline_query, etc.)
-
 * `[ctx.updateSubTypes]`     - Update subtypes (text, sticker, audio, etc.)
 * `[ctx.message]`            - Received message
 * `[ctx.editedMessage]`      - Edited message
@@ -188,7 +190,8 @@ Context is created per request and contains following props:
 * `[ctx.editedChannelPost]`  - New version of a channel post that is known to the bot and was edited
 * `[ctx.chat]`               - Current chat info
 * `[ctx.from]`               - Sender info
-* `[ctx.match]`              - Regex match (available only for `hears`, `command`, `action` handlers)
+* `[ctx.match]`              - Regex match (available only for `hears`, `command`, `action`, `inlineQuery` handlers)
+* `ctx.webhookReply `        - Shortcut to `ctx.telegram.webhookReply`
 
 ```js
 bot.use((ctx) => {
@@ -211,6 +214,8 @@ bot.on('text', (ctx) => {
   const scores = ctx.db.getScores(ctx.message.from.username)
   return ctx.reply(`${ctx.message.from.username}: ${score}`)
 })
+
+bot.launch()
 ```
 
 ##### Shortcuts
@@ -347,6 +352,8 @@ bot.on('inline_query', (ctx) => {
   // Using shortcut
   ctx.answerInlineQuery(result)
 })
+
+bot.launch()
 ```
 
 #### State
@@ -365,6 +372,8 @@ bot.use((ctx, next) => {
 bot.on('text', (ctx) => {
   return ctx.reply(`Hello ${ctx.state.role}`)
 })
+
+bot.launch()
 ```
 
 #### Session
@@ -379,6 +388,8 @@ bot.on('text', (ctx) => {
   ctx.session.counter++
   return ctx.reply(`Message counter:${ctx.session.counter}`)
 })
+
+bot.launch()
 ```
 
 **Note: For persistent sessions you might use any of [`telegraf-session-*`](https://www.npmjs.com/search?q=telegraf-session) middleware.**
@@ -782,6 +793,18 @@ Registers middleware for handling `callback_data` actions with regular expressio
 | middleware | `function` | Middleware |
 
 
+##### inlineQuery
+
+Registers middleware for handling `inline_query` actions with regular expressions.
+
+`telegraf.inlineQuery(triggers, ...middleware)`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| triggers | `string/string[]/RegEx/RegEx[]` | Triggers |
+| middleware | `function` | Middleware |
+
+
 ##### gameQuery
 
 Registers middleware for handling `callback_data` actions with game query.
@@ -791,6 +814,30 @@ Registers middleware for handling `callback_data` actions with game query.
 | Param | Type | Description |
 | --- | --- | --- |
 | middleware | `function` | Middleware |
+
+##### launch
+
+Launch bot in long-polling or webhook mode. 
+
+`telegraf.launch(options) => Promise`
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| [options] | `object` | Launch options |
+
+Launch options:
+
+```js
+{
+  // Start bot in polling mode (Default)
+  // See startPolling reference
+  polling: { timeout, limit,  allowedUpdates,  stopCallback },
+
+  // Start bot in webhook mode
+  // See startWebhook reference
+  webhook: { domain, hookPath,  port,  host,  tlsOptions,  cb } 
+}
+```
 
 ##### startPolling
 
@@ -809,11 +856,11 @@ Start poll updates.
 
 Start listening @ `https://host:port/webhookPath` for Telegram calls.
 
-`telegraf.startWebhook(webhookPath, [tlsOptions], port, [host])`
+`telegraf.startWebhook(hookPath, [tlsOptions], port, [host])`
 
 | Param | Type | Description |
 | ---  | --- | --- |
-| webhookPath | `string` | Webhook url path (see Telegraf.setWebhook) |
+| hookPath | `string` | Webhook url path (see Telegraf.setWebhook) |
 | [tlsOptions] | `object` | [TLS server options](https://nodejs.org/api/tls.html#tls_tls_createserver_options_secureconnectionlistener). Pass null to use http |
 | port | `number` | Port number |
 | [host] | `string` | Hostname |
@@ -884,6 +931,17 @@ Generates middleware for handling `text` messages with regular expressions.
 Generates middleware for handling `callbackQuery` data with regular expressions.
 
 `Telegraf.action(triggers, ...middleware) => function`
+
+| Param | Type | Description |
+| --- | --- | --- |
+| triggers | `string/string[]/RegEx/RegEx[]/Function/Function[]` | Triggers |
+| handler | `function` | Handler |
+
+##### Telegraf.inlineQuery
+
+Generates middleware for handling `inlineQuery` data with regular expressions.
+
+`Telegraf.inlineQuery(triggers, ...middleware) => function`
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -1870,30 +1928,3 @@ bot.on('message', (ctx) => {
   ctx.scene.leave()                                  // Leave scene s
 })
 ```
-
-## Recipes
-
-<p class="tip">
-  Feel free to send PR with additional recipes.
-</p>
-
-##### Command handling in group
-
-For handling group/supergroup commands(`/start@your_bot`) you need to provide bot username.
-
-```js
-const bot = new Telegraf(process.env.BOT_TOKEN, {username: 'your_bot'})
-```
-
-Also, you can get the username from Telegram server.
-
-```js
-const bot = new Telegraf(process.env.BOT_TOKEN)
-
-bot.telegram.getMe().then((botInfo) => {
-  bot.options.username = botInfo.username
-})
-
-bot.command('foo', (ctx) => ctx.reply('Hello World'))
-```
-

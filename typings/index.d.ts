@@ -1006,7 +1006,7 @@ export class Markup {
 
   extra(options?: object): object;
 
-  keyboard(buttons: (Buttons | string)[], options?: object): tt.InlineKeyboardMarkup;
+  keyboard(buttons: (Buttons | string)[] | (Buttons | string)[][], options?: object): Markup & tt.InlineKeyboardMarkup;
 
   resize(value?: boolean): Markup;
 
@@ -1036,7 +1036,7 @@ export class Markup {
 
   static forceReply(value?: string): Markup;
 
-  static keyboard(buttons: (Buttons | string)[], options?: object): tt.InlineKeyboardMarkup;
+  static keyboard(buttons: (Buttons | string)[] | (Buttons | string)[][], options?: object): Markup & tt.InlineKeyboardMarkup;
 
   static inlineKeyboard(buttons: CallbackButton[] | CallbackButton[][], options?: object): tt.InlineKeyboardMarkup;
 
